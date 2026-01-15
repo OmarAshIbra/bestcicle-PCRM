@@ -1,0 +1,31 @@
+enhance this prompt :
+I want you to to the following 
+- make the whole app resonsive to all screen size (sm,md,lg,xl) 
+- add the dark and light mode using the shadcn 
+- if page or card or container ( for table that not has data on it) use shadcn Empty (npx shadcn@latest add empty)
+- make the all the dashboards the same as the image with shadcn sidebar with (SidebarProvider, Sidebar, SidebarHeader, SidebarFooter, SidebarContent, SidebarGroup, SidebarTrigger) and the nav bar with user porfile menu and notfication 
+- add Breadcrumb for each page 
+- for each reocrd create ( email , note, meeting,call , task) should has creaated by records in the database
+
+- In the Clinets page (It will so on a clinets dashboard) 
+- tables should be shadcn table with (Row Actions, Pagination, Sorting, Filtering, Visibility, Row Selection) and export functionality (eithire selcting items or all) to (excell,csv) 
+- for the clinets/[id]  page make more attractive   it should has cards ( clinet info, projects card (with display feature (grid or list) ,meetings (with three clickable taps  (upcomming , all , past) and filtter (status (past,upcoming) , Date) ), emails card that has the total number of sent emails (in the card description) and displays the emails, notes card , task card ) keep the same icons that is used 
+- Only admin or mangers to other team member (users) and that user will get notified with that .
+- users can create tasks or projects and the manger or admin must approve it to appears (once the task/project created by users manger will get notification with that )
+- if the manger or admain create task/project it will be approved automaticaly 
+- manger / admin can approve the task/project on the noification ( page , notification list from the nav bar) or by click on the task/proejct and go to the page to approve it .
+- after mager/admin approve task/project the it will appear in the project dashboard page and the user who create the task/project will get notified that your projects gets notified 
+-essintial project Features:
+1-Create, update, and delete projects 
+2-All users can create and update projects
+3-Only manager-role users can delete projects
+4- Set project status and due dates
+5-Create tasks within projects
+6-Update task status (todo, in progress, done)
+7-Assign tasks to users
+8-Set task priority and due dates
+9-View tasks by list or kanban board
+10-Add comments to tasks
+11-Track basic task activity (created, updated, status changed)
+12- each project must has createdby and project mangers , and one or more users as team 
+- Mangers can see some analitcas status about the users like how many created projects/tasks/email for each users 

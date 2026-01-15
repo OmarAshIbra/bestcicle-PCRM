@@ -1,0 +1,55 @@
+"use client"
+
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
+import { LayoutDashboard, Users, Activity, Mail } from "lucide-react"
+
+const navItems = [
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Clients",
+    href: "/clients",
+    icon: Users,
+  },
+  {
+    title: "Activities",
+    href: "/activities",
+    icon: Activity,
+  },
+  {
+    title: "Email",
+    href: "/email",
+    icon: Mail,
+  },
+]
+
+export function DashboardNav() {
+  const pathname = usePathname()
+
+  return (
+    <nav className="flex items-center gap-1">
+      {navItems.map((item) => {
+        const Icon = item.icon
+        const isActive = pathname === item.href
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+              isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground",
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            {item.title}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
