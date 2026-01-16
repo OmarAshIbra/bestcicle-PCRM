@@ -110,7 +110,8 @@ export function ClientInfoCard({ client }: ClientInfoCardProps) {
               </span>
             </div>
           </div>
-          <div className="space-y-1 md:col-span-2">
+
+          <div className="space-y-1 md:col-span-1">
             <h4 className="text-sm font-medium leading-none flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" /> Member
               Since
@@ -118,6 +119,16 @@ export function ClientInfoCard({ client }: ClientInfoCardProps) {
             <p className="text-sm text-muted-foreground">
               {format(new Date(client.created_at), "MMMM d, yyyy")}
             </p>
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-sm font-medium leading-none flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" /> Assigned To
+            </h4>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {client.assigned_user?.full_name || "Unassigned"}
+              </span>
+            </div>
           </div>
         </div>
       </CardContent>

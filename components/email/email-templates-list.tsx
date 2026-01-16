@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Edit, Trash2, Plus, FileText } from "lucide-react";
+import { Edit, Trash2, Plus, FileText, UserPen } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -33,12 +33,16 @@ interface EmailTemplate {
   name: string;
   subject: string;
   body: string;
-  created_by: string;
+  created_by: {
+    id: string;
+    full_name: string;
+  } | null;
 }
 
 interface User {
   id: string;
   role: string;
+  name: string;
 }
 
 interface EmailTemplatesListProps {
@@ -61,7 +65,7 @@ export function EmailTemplatesList({
     // Admins and Managers can delete any, Users can delete their own
     return (
       ["admin", "manager"].includes(user.role) ||
-      template.created_by === user.id
+      template.created_by?.id === user.id
     );
   };
 
@@ -114,7 +118,7 @@ export function EmailTemplatesList({
 
       {!templates || templates.length === 0 ? (
         <EmptyState
-          icon={FileText}
+          // icon={FileText}
           title="No templates found"
           description="Create your first email template to get started."
           className="border rounded-lg bg-card"
@@ -140,25 +144,36 @@ export function EmailTemplatesList({
                   {template.body}
                 </p>
               </CardContent>
-              <CardFooter className="flex justify-end gap-2 border-t p-4 bg-muted/20">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEdit(template)}
+              <CardFooter className="flex justify-between  border-t px-4 bg-muted/20">
+                <div
+                  className="flex items-start justify-center gap-2 text-sm my-auto text-gray-400"
+                  title="Created by"
                 >
-                  <Edit className="mr-2 h-3 w-3" />
-                  Edit
-                </Button>
-                {canDelete(template) && (
+                  <UserPen className="text-muted-foreground" size={16} />
+                  {template.created_by?.full_name ?? "Unknown"}
+                </div>
+                <div className="flex items-center gap-2 lg:gap-4">
                   <Button
-                    variant="destructive"
+                    variant="outline"
                     size="sm"
-                    onClick={() => setTemplateToDelete(template)}
+                    onClick={() => handleEdit(template)}
+                    className="cursor-pointer"
                   >
-                    <Trash2 className="mr-2 h-3 w-3" />
-                    Delete
+                    <Edit className="mr-2 h-3 w-3" />
+                    Edit
                   </Button>
-                )}
+                  {canDelete(template) && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setTemplateToDelete(template)}
+                      className="cursor-pointer"
+                    >
+                      <Trash2 className="mr-2 h-3 w-3 text-white" />
+                      Delete
+                    </Button>
+                  )}
+                </div>
               </CardFooter>
             </Card>
           ))}
@@ -187,7 +202,7 @@ export function EmailTemplatesList({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90 cursor-pointer"
               onClick={handleDelete}
             >
               Delete

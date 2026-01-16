@@ -44,8 +44,8 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
     <SidebarProvider>
       <AppSidebar user={user} />
       <div className="flex flex-col flex-1 h-screen overflow-hidden">
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
-          <SidebarTrigger className="-ml-1" />
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 lg:px-6">
+          <SidebarTrigger className="-ml-2" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList>
@@ -79,9 +79,8 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
             </BreadcrumbList>
           </Breadcrumb>
           <div className="ml-auto flex items-center gap-4">
-            <span className="hidden md:inline-block text-sm font-medium">
-              Welcome to our dashboard ,{" "}
-              {user?.full_name?.split(" ")[0] || "User"}
+            <span className="hidden md:inline-block text-sm lg:text-base tracking-widest font-medium">
+              Welcome Back , {user?.full_name?.split(" ")[0] || "User"}
             </span>
             <ThemeToggle />
             <NotificationDropdown />

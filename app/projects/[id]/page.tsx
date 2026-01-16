@@ -6,6 +6,7 @@ import { ProjectTeam } from "@/components/projects/project-team";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskListView } from "@/components/tasks/task-list-view";
 import { TaskKanban } from "@/components/tasks/task-kanban";
+import { ProjectGanttChart } from "@/components/projects/project-gantt-chart";
 
 export default async function ProjectDetailPage({
   params,
@@ -70,9 +71,7 @@ export default async function ProjectDetailPage({
               />
             </TabsContent>
             <TabsContent value="timeline" className="mt-4">
-              <div className="h-[400px] flex items-center justify-center border border-dashed rounded-lg bg-muted/20">
-                Timeline View (Coming Soon)
-              </div>
+              <ProjectGanttChart tasks={tasks || []} />
             </TabsContent>
           </Tabs>
         </div>

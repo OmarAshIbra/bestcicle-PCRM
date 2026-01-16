@@ -39,6 +39,14 @@ export default function SignupPage() {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    // Basic validation
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      setLoading(false);
+      return;
+    }
+    // Optional: Add regex for complexity if needed
+
     setError("");
     setLoading(true);
 
@@ -51,7 +59,7 @@ export default function SignupPage() {
         password,
         options: {
           emailRedirectTo:
-            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+            // process.env.NEXT_PUBLIC_APP_URL ||
             `${window.location.origin}/dashboard`,
           data: {
             full_name: fullName,
@@ -65,29 +73,6 @@ export default function SignupPage() {
       if (signUpError) throw signUpError;
 
       if (data.user) {
-        try {
-          const response = await fetch("/api/sync-user", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              userId: data.user.id,
-              email: data.user.email,
-              fullName: fullName,
-              role: role,
-              phone: phone,
-              gender: gender,
-            }),
-          });
-
-          if (!response.ok) {
-            console.error("Failed to sync user profile");
-          }
-        } catch (syncError) {
-          console.error("Error syncing user:", syncError);
-        }
-
         setSuccess(true);
         setTimeout(() => {
           window.location.href = "/dashboard";

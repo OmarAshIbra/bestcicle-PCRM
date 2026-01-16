@@ -1,31 +1,35 @@
-import { createClient as createServerClient } from "@/lib/supabase/server"
+import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export async function getCurrentUser() {
-  const supabase = await createServerClient()
+  const supabase = await createServerClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  if (!user) return null
+  if (!user) return null;
 
   // Fetch user profile from users table
-  const { data: profile } = await supabase.from("users").select("*").eq("id", user.id).single()
+  const { data: profile } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", user.id)
+    .single();
 
-  return profile
+  return profile;
 }
 
 export async function requireAuth() {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser();
   if (!user) {
-    throw new Error("Unauthorized")
+    throw new Error("Unauthorized");
   }
-  return user
+  return user;
 }
 
 export async function requireRole(allowedRoles: string[]) {
-  const user = await requireAuth()
+  const user = await requireAuth();
   if (!allowedRoles.includes(user.role)) {
-    throw new Error("Forbidden: Insufficient permissions")
+    throw new Error("Forbidden: Insufficient permissions");
   }
-  return user
+  return user;
 }

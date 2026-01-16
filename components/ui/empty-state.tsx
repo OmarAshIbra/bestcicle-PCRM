@@ -15,14 +15,14 @@ import {
 interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
   description?: string;
-  icon?: LucideIcon;
+  icon?: React.ReactNode;
   action?: React.ReactNode;
 }
 
 export function EmptyState({
   title,
   description,
-  icon: Icon,
+  icon,
   action,
   className,
   ...props
@@ -30,9 +30,11 @@ export function EmptyState({
   return (
     <Empty className={cn("py-8", className)} {...props}>
       <EmptyHeader>
-        {Icon && (
+        {icon && (
           <EmptyMedia variant="icon">
-            <Icon className="h-6 w-6" />
+            {typeof icon === "function"
+              ? React.createElement(icon as any, { className: "h-6 w-6" })
+              : icon}
           </EmptyMedia>
         )}
         <EmptyTitle>{title}</EmptyTitle>

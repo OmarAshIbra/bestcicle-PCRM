@@ -104,9 +104,9 @@ export function AppSidebar({ user }: { user: UserData }) {
     },
     {
       title: "Notifications",
-      url: "/dashboard/notifications",
+      url: "/notifications",
       icon: Bell,
-      isActive: pathname.startsWith("/dashboard/notifications"),
+      isActive: pathname.startsWith("/notifications"),
     },
   ];
 
@@ -140,9 +140,12 @@ export function AppSidebar({ user }: { user: UserData }) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu>
+        <SidebarMenu className="mt-9">
           {navItems.map((item) => (
-            <SidebarMenuItem key={item.title}>
+            <SidebarMenuItem
+              key={item.title}
+              className="hover:bg-sidebar-accent flex w-full items-center justify-center "
+            >
               <SidebarMenuButton
                 asChild
                 isActive={item.isActive}

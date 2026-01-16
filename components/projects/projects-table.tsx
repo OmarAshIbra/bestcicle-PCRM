@@ -212,7 +212,7 @@ export function ProjectsTable({
       <EmptyState
         title="No projects found"
         description="Get started by creating your first project."
-        icon={Briefcase}
+        // icon={Briefcase}
         action={
           canCreate ? (
             <Button asChild>

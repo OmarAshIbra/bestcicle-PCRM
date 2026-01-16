@@ -1,46 +1,58 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface User {
-  id: string
-  full_name: string
+  id: string;
+  full_name: string;
 }
 
 interface Client {
-  id: string
-  name: string
-  email: string
-  phone: string | null
-  company: string | null
-  industry: string | null
-  status: string
-  lifetime_value: number
-  assigned_to: string | null
-  notes: string | null
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  company: string | null;
+  industry: string | null;
+  status: string;
+  lifetime_value: number;
+  assigned_to: string | null;
+  notes: string | null;
 }
 
 interface ClientFormProps {
-  client?: Client
-  users: User[]
+  client?: Client;
+  users: User[];
 }
 
 export function ClientForm({ client, users }: ClientFormProps) {
-  const router = useRouter()
-  const supabase = createClient()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const supabase = createClient();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
     name: client?.name || "",
@@ -50,14 +62,15 @@ export function ClientForm({ client, users }: ClientFormProps) {
     industry: client?.industry || "",
     status: client?.status || "lead",
     lifetime_value: client?.lifetime_value?.toString() || "0",
-    assigned_to: client?.assigned_to || "unassigned",
+    assigned_to: client?.assigned_to || users[0].id,
     notes: client?.notes || "",
-  })
+    created_by: users[0].id,
+  });
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
       const data = {
@@ -68,29 +81,36 @@ export function ClientForm({ client, users }: ClientFormProps) {
         company: formData.company || null,
         industry: formData.industry || null,
         notes: formData.notes || null,
-      }
+      };
 
       if (client) {
         // Update existing client
-        const { error: updateError } = await supabase.from("clients").update(data).eq("id", client.id)
+        const { error: updateError } = await supabase
+          .from("clients")
+          .update(data)
+          .eq("id", client.id);
 
-        if (updateError) throw updateError
+        if (updateError) throw updateError;
 
-        router.push(`/clients/${client.id}`)
+        router.push(`/clients/${client.id}`);
       } else {
         // Create new client
-        const { data: newClient, error: insertError } = await supabase.from("clients").insert(data).select().single()
+        const { data: newClient, error: insertError } = await supabase
+          .from("clients")
+          .insert(data)
+          .select()
+          .single();
 
-        if (insertError) throw insertError
+        if (insertError) throw insertError;
 
-        router.push(`/clients/${newClient.id}`)
+        router.push(`/clients/${newClient.id}`);
       }
 
-      router.refresh()
+      router.refresh();
     } catch (err: any) {
-      setError(err.message || "Failed to save client")
+      setError(err.message || "Failed to save client");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -98,9 +118,13 @@ export function ClientForm({ client, users }: ClientFormProps) {
     <form onSubmit={handleSubmit}>
       <Card>
         <CardHeader>
-          <CardTitle>{client ? "Edit Client Information" : "Client Information"}</CardTitle>
+          <CardTitle>
+            {client ? "Edit Client Information" : "Client Information"}
+          </CardTitle>
           <CardDescription>
-            {client ? "Update the client details below" : "Enter the details for the new client"}
+            {client
+              ? "Update the client details below"
+              : "Enter the details for the new client"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -118,7 +142,9 @@ export function ClientForm({ client, users }: ClientFormProps) {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 required
                 disabled={loading}
               />
@@ -132,7 +158,9 @@ export function ClientForm({ client, users }: ClientFormProps) {
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 required
                 disabled={loading}
               />
@@ -144,7 +172,9 @@ export function ClientForm({ client, users }: ClientFormProps) {
                 id="phone"
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
                 disabled={loading}
               />
             </div>
@@ -154,7 +184,9 @@ export function ClientForm({ client, users }: ClientFormProps) {
               <Input
                 id="company"
                 value={formData.company}
-                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, company: e.target.value })
+                }
                 disabled={loading}
               />
             </div>
@@ -164,14 +196,21 @@ export function ClientForm({ client, users }: ClientFormProps) {
               <Input
                 id="industry"
                 value={formData.industry}
-                onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, industry: e.target.value })
+                }
                 disabled={loading}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+              <Select
+                value={formData.status}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, status: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -191,7 +230,9 @@ export function ClientForm({ client, users }: ClientFormProps) {
                 type="number"
                 step="0.01"
                 value={formData.lifetime_value}
-                onChange={(e) => setFormData({ ...formData, lifetime_value: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, lifetime_value: e.target.value })
+                }
                 disabled={loading}
               />
             </div>
@@ -200,7 +241,9 @@ export function ClientForm({ client, users }: ClientFormProps) {
               <Label htmlFor="assigned_to">Assigned To</Label>
               <Select
                 value={formData.assigned_to}
-                onValueChange={(value) => setFormData({ ...formData, assigned_to: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, assigned_to: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select user" />
@@ -222,7 +265,9 @@ export function ClientForm({ client, users }: ClientFormProps) {
             <Textarea
               id="notes"
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
               rows={4}
               disabled={loading}
             />
@@ -230,14 +275,23 @@ export function ClientForm({ client, users }: ClientFormProps) {
 
           <div className="flex gap-4">
             <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : client ? "Update Client" : "Create Client"}
+              {loading
+                ? "Saving..."
+                : client
+                ? "Update Client"
+                : "Create Client"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+              disabled={loading}
+            >
               Cancel
             </Button>
           </div>
         </CardContent>
       </Card>
     </form>
-  )
+  );
 }

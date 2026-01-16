@@ -81,7 +81,7 @@ export function TaskFormDialog({
       priority: task?.priority || "medium",
       status: task?.status || "todo",
       due_date: task?.due_date ? new Date(task.due_date) : undefined,
-      assigned_to: task?.assigned_to || undefined,
+      assigned_to: task?.assigned_to || userId,
     },
   });
 

@@ -107,7 +107,7 @@ export function NotificationDropdown() {
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+          <Bell className="size-6" />
           <span className="sr-only">Notifications</span>
           {unreadCount > 0 && (
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive ring-1 ring-background" />
@@ -120,7 +120,7 @@ export function NotificationDropdown() {
           {unreadCount > 0 && (
             <Button
               variant="ghost"
-              size="xs"
+              size="sm"
               className="h-auto p-0 text-xs text-muted-foreground hover:text-primary"
               onClick={markAllRead}
             >

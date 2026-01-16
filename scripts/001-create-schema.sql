@@ -84,14 +84,8 @@ CREATE POLICY "Users can update their own profile" ON users
 CREATE POLICY "Users can view all clients" ON clients
   FOR SELECT USING (true);
 
-CREATE POLICY "Admins and managers can insert clients" ON clients
-  FOR INSERT WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
-      AND users.role IN ('admin', 'manager')
-    )
-  );
+CREATE POLICY "Authenticated users can insert clients" ON clients
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 CREATE POLICY "Admins and managers can update all clients" ON clients
   FOR UPDATE USING (
