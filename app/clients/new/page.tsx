@@ -1,16 +1,19 @@
-import { requireRole } from "@/lib/auth"
-import { ClientForm } from "@/components/clients/client-form"
-import { createClient } from "@/lib/supabase/server"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { requireRole } from "@/lib/auth";
+import { ClientForm } from "@/components/clients/client-form";
+import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 export default async function NewClientPage() {
-  await requireRole(["admin", "manager"])
-  const supabase = await createClient()
+  await requireRole(["admin", "manager"]);
+  const supabase = await createClient();
 
   // Fetch users for assignment dropdown
-  const { data: users } = await supabase.from("users").select("id, full_name, role").order("full_name")
+  const { data: users } = await supabase
+    .from("users")
+    .select("id, full_name, role")
+    .order("full_name");
 
   return (
     <div className="space-y-6">
@@ -27,5 +30,5 @@ export default async function NewClientPage() {
 
       <ClientForm users={users || []} />
     </div>
-  )
+  );
 }

@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ClientsTable } from "@/components/clients/clients-table";
+import { ClientStats } from "@/components/clients/client-stats";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
@@ -13,7 +14,9 @@ export default async function ClientsPage() {
   // Fetch all clients with assigned user info
   const { data: clients } = await supabase
     .from("clients")
-    .select("*, assigned_user:users!clients_assigned_to_fkey(full_name)")
+    .select(
+      "*, assigned_user:users!clients_assigned_to_fkey(full_name),created_by:users!clients_created_by_fkey(full_name)"
+    )
     .order("created_at", { ascending: false });
 
   const canCreateClients = ["admin", "manager"].includes(user.role);
@@ -37,6 +40,8 @@ export default async function ClientsPage() {
           <BulkImportDialog />
         </div>
       </div>
+
+      <ClientStats clients={clients || []} />
 
       <ClientsTable clients={clients || []} userRole={user.role} />
     </div>

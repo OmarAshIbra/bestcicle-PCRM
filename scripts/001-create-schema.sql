@@ -6,10 +6,10 @@ CREATE TABLE users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL UNIQUE,
   full_name TEXT NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('admin', 'manager', 'sales_rep')),
+  role TEXT NOT NULL CHECK (role IN ('admin', 'manager', 'team_member')),
   avatar_url TEXT,
   phone TEXT,
-  gender TEXT CHECK (gender IN ('male', 'female', 'other')),
+  gender TEXT CHECK (gender IN ('male', 'female')),
   password TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -23,6 +23,9 @@ CREATE TABLE clients (
   phone TEXT,
   company TEXT,
   industry TEXT,
+  location TEXT,
+  address TEXT,
+  website TEXT,
   status TEXT NOT NULL CHECK (status IN ('lead', 'active', 'inactive', 'churned')) DEFAULT 'lead',
   lifetime_value DECIMAL(10, 2) DEFAULT 0,
   assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -31,13 +34,49 @@ CREATE TABLE clients (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+-- Email table 
+CREATE TABLE emails (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+
+  purpose TEXT CHECK (
+    purpose IN (
+      'introduction',
+      'follow_up',
+      'reminder',
+      'check_in',
+      'onboarding',
+      'proposal',
+      'renewal',
+      'support'
+    )
+  ) DEFAULT 'introduction',
+
+  subject TEXT NOT NULL,
+  body TEXT NOT NULL,
+
+  -- Response tracking
+  got_response BOOLEAN DEFAULT FALSE,
+  response_body TEXT,
+
+  -- Follow-up relationship (self reference)
+  parent_email_id UUID REFERENCES emails(id) ON DELETE SET NULL,
+  CHECK (parent_email_id IS NULL OR parent_email_id <> id),
+
+  -- Audit
+  created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sent_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+
+);
 
 -- Activities table
 CREATE TABLE activities (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  type TEXT NOT NULL CHECK (type IN ('email', 'call', 'meeting', 'note', 'task')),
+  type TEXT NOT NULL CHECK (type IN ('call', 'meeting', 'note', 'task')),
   subject TEXT NOT NULL,
   description TEXT,
   scheduled_at TIMESTAMP WITH TIME ZONE,
@@ -66,11 +105,13 @@ CREATE INDEX idx_activities_client_id ON activities(client_id);
 CREATE INDEX idx_activities_user_id ON activities(user_id);
 CREATE INDEX idx_activities_type ON activities(type);
 CREATE INDEX idx_activities_scheduled_at ON activities(scheduled_at);
+CREATE INDEX idx_emails_parent_email_id ON emails(parent_email_id);
 
 -- Enable Row Level Security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE emails ENABLE ROW LEVEL SECURITY;
 ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for users table
@@ -96,16 +137,47 @@ CREATE POLICY "Admins and managers can update all clients" ON clients
     )
   );
 
-CREATE POLICY "Sales reps can update assigned clients" ON clients
+CREATE POLICY "Team members can update assigned clients" ON clients
   FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM users 
       WHERE users.id = auth.uid() 
-      AND (users.role = 'sales_rep' AND clients.assigned_to = auth.uid())
+      AND (users.role = 'team_member' AND clients.assigned_to = auth.uid())
     )
   );
 
 CREATE POLICY "Admins can delete clients" ON clients
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM users 
+      WHERE users.id = auth.uid() 
+      AND users.role = 'admin'
+    )
+  );
+
+-- RLS Policies for emails table
+CREATE POLICY "Users can view all emails" ON emails
+  FOR SELECT USING (true);
+
+CREATE POLICY "Authenticated users can insert emails" ON emails
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Users can update their own emails" ON emails
+  FOR UPDATE USING (auth.uid() = created_by);
+
+CREATE POLICY "Admins can update all emails" ON emails
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM users 
+      WHERE users.id = auth.uid() 
+      AND users.role = 'admin'
+    )
+  );
+
+CREATE POLICY "Users can delete their own emails" ON emails
+  FOR DELETE USING (auth.uid() = created_by);
+
+CREATE POLICY "Admins can delete all emails" ON emails
   FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM users 
@@ -190,6 +262,9 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_clients_updated_at BEFORE UPDATE ON clients
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_emails_updated_at BEFORE UPDATE ON emails
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_activities_updated_at BEFORE UPDATE ON activities

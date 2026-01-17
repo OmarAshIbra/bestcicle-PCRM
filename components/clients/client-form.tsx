@@ -37,6 +37,9 @@ interface Client {
   phone: string | null;
   company: string | null;
   industry: string | null;
+  location: string | null;
+  address: string | null;
+  website: string | null;
   status: string;
   lifetime_value: number;
   assigned_to: string | null;
@@ -60,11 +63,13 @@ export function ClientForm({ client, users }: ClientFormProps) {
     phone: client?.phone || "",
     company: client?.company || "",
     industry: client?.industry || "",
+    location: client?.location || "",
+    address: client?.address || "",
+    website: client?.website || "",
     status: client?.status || "lead",
     lifetime_value: client?.lifetime_value?.toString() || "0",
-    assigned_to: client?.assigned_to || users[0].id,
+    assigned_to: client?.assigned_to || users[0]?.id || "",
     notes: client?.notes || "",
-    created_by: users[0].id,
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -73,31 +78,47 @@ export function ClientForm({ client, users }: ClientFormProps) {
     setLoading(true);
 
     try {
-      const data = {
-        ...formData,
-        lifetime_value: Number.parseFloat(formData.lifetime_value) || 0,
-        assigned_to: formData.assigned_to || null,
+      const baseData = {
+        name: formData.name,
+        email: formData.email,
         phone: formData.phone || null,
         company: formData.company || null,
         industry: formData.industry || null,
+        location: formData.location || null,
+        address: formData.address || null,
+        website: formData.website || null,
+        status: formData.status,
+        lifetime_value: Number.parseFloat(formData.lifetime_value) || 0,
+        assigned_to: formData.assigned_to || null,
         notes: formData.notes || null,
       };
 
       if (client) {
-        // Update existing client
+        // Update existing client - DO NOT include created_by
         const { error: updateError } = await supabase
           .from("clients")
-          .update(data)
+          .update(baseData)
           .eq("id", client.id);
 
         if (updateError) throw updateError;
 
         router.push(`/clients/${client.id}`);
       } else {
-        // Create new client
+        // Create new client - include created_by
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          throw new Error("You must be logged in to create a client");
+        }
+
         const { data: newClient, error: insertError } = await supabase
           .from("clients")
-          .insert(data)
+          .insert({
+            ...baseData,
+            created_by: user.id,
+          })
           .select()
           .single();
 
@@ -198,6 +219,44 @@ export function ClientForm({ client, users }: ClientFormProps) {
                 value={formData.industry}
                 onChange={(e) =>
                   setFormData({ ...formData, industry: e.target.value })
+                }
+                disabled={loading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={(e) =>
+                  setFormData({ ...formData, location: e.target.value })
+                }
+                disabled={loading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
+                disabled={loading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="website">Website</Label>
+              <Input
+                id="website"
+                type="url"
+                placeholder="https://example.com"
+                value={formData.website}
+                onChange={(e) =>
+                  setFormData({ ...formData, website: e.target.value })
                 }
                 disabled={loading}
               />

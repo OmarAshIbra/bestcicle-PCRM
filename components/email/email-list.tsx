@@ -44,12 +44,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Email {
   id: string;
-  type: string;
-  description: string;
-  created_at: string;
-  subject?: string; // Some might not have it if old schema, but new ones do
-  client: { name: string } | null;
-  attachments?: any[]; // JSONB
+  client_id: string;
+  purpose?: string;
+  subject: string;
+  body: string;
+  got_response: boolean;
+  response_body?: string | null;
+  parent_email_id?: string | null;
+  sent_at: string;
+  updated_at: string;
+  client: { id: string; name: string; email: string } | null;
+  created_by?: { full_name: string; id: string };
+  child_emails?: Email[];
 }
 
 interface Client {
@@ -68,17 +74,14 @@ export function EmailList({ initialEmails, clients }: EmailListProps) {
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
+  console.log(clients);
 
   // Derived state for filtering
   const filteredEmails = initialEmails.filter((email) => {
     // Search Text
     const searchLower = search.toLowerCase();
-    const subject =
-      email.subject || email.description.split(":")[1]?.trim() || "";
-    const to = email.description
-      .split(":")[0]
-      ?.replace("Sent email to", "")
-      .trim();
+    const subject = email.subject || email.body.split(":")[1]?.trim() || "";
+    const to = email.body.split(":")[0]?.replace("Sent email to", "").trim();
     const clientName = email.client?.name || "";
 
     const matchesSearch =
@@ -89,13 +92,11 @@ export function EmailList({ initialEmails, clients }: EmailListProps) {
     // Client Filter
     const matchesClient =
       clientFilter === "all" ||
-      (email.client && email.client.name === clientFilter); // Using name for simplicity as ID might be harder to map from client dropdown if we only have names in table?
-    // Actually prop passes clients with ID. Let's filter by ID if possible, but email.client only returns name in the query: `client:clients(name)`.
-    // I should update the query in page.tsx to return client id as well `client:clients(id, name)`.
+      (email.client && email.client.name === clientFilter);
 
     // Date Filter
     let matchesDate = true;
-    const emailDate = new Date(email.created_at);
+    const emailDate = new Date(email.sent_at);
     const now = new Date();
     if (dateFilter === "today") {
       matchesDate = emailDate.toDateString() === now.toDateString();
@@ -158,6 +159,11 @@ export function EmailList({ initialEmails, clients }: EmailListProps) {
         </div>
 
         {/* View Toggle */}
+        {/* show number of emails */}
+        <div className="flex items-center gap-1" title="Number of emails">
+          <p className="text-sm text-foreground/60"> {initialEmails.length}</p>
+          <Mail className="h-4 w-4 text-muted-foreground" />
+        </div>
         <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/50">
           <Button
             variant={viewMode === "grid" ? "secondary" : "ghost"}
@@ -214,32 +220,44 @@ export function EmailList({ initialEmails, clients }: EmailListProps) {
                         title={email.subject || "No Subject"}
                       >
                         {email.subject ||
-                          email.description.split(":")[1]?.trim() ||
+                          email.body.split(":")[1]?.trim() ||
                           "No Subject"}
                       </h4>
                       <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                        {format(new Date(email.created_at), "MMM d")}
+                        {format(new Date(email.sent_at), "MMM d")}
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-1">
                       To:{" "}
-                      {email.description
+                      {email.body
                         .split(":")[0]
                         ?.replace("Sent email to", "")
                         .trim()}
                     </p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <UserIcon className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        {email.created_by?.full_name || "Unknown"}
+                      </span>
+                    </div>
                   </CardHeader>
                 ) : (
                   // List View Header
                   <div className="flex items-center gap-4">
                     <div className="min-w-[100px] text-xs text-muted-foreground">
-                      {format(new Date(email.created_at), "MMM d, yyyy")}
+                      {format(new Date(email.sent_at), "MMM d, yyyy")}
                     </div>
                     <div className="font-semibold w-[200px] truncate">
                       {email.client?.name || "Unknown"}
                     </div>
                     <div className="flex-1 font-medium truncate">
-                      {email.subject || email.description}
+                      {email.subject || email.body}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground min-w-[120px]">
+                      <UserIcon className="h-3 w-3" />
+                      <span className="truncate">
+                        {email.created_by?.full_name || "Unknown"}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -250,12 +268,12 @@ export function EmailList({ initialEmails, clients }: EmailListProps) {
                       <Badge variant="secondary" className="text-xs">
                         {email.client?.name || "Unknown Client"}
                       </Badge>
-                      {email.attachments && email.attachments.length > 0 && (
+                      {/* {email?.attachments && email.attachments.length > 0 && (
                         <Badge variant="outline" className="text-xs gap-1">
                           <Paperclip className="h-3 w-3" />
                           {email.attachments.length}
                         </Badge>
-                      )}
+                      )} */}
                     </div>
                   </CardContent>
                 )}
@@ -270,92 +288,175 @@ export function EmailList({ initialEmails, clients }: EmailListProps) {
         open={!!selectedEmail}
         onOpenChange={(open) => !open && setSelectedEmail(null)}
       >
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-xl">
               {selectedEmail?.subject || "Email Details"}
             </DialogTitle>
             <DialogDescription>
               Sent on{" "}
               {selectedEmail &&
-                format(new Date(selectedEmail.created_at), "PPP 'at' p")}
+                format(new Date(selectedEmail.sent_at), "PPP 'at' p")}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-muted-foreground">
-                To:
-              </span>
-              <span className="text-sm">
-                {selectedEmail?.description
-                  .split(":")[0]
-                  ?.replace("Sent email to", "")
-                  .trim()}
-              </span>
-            </div>
-            {selectedEmail?.client?.name && (
-              <div className="flex flex-col gap-1">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Client:
-                </span>
-                <span className="text-sm">{selectedEmail.client.name}</span>
-              </div>
-            )}
-            <div className="border rounded-md p-4 bg-muted/20 text-sm whitespace-pre-wrap max-h-[300px] overflow-y-auto">
-              {/* 
-                       Activities table doesn't cleanly store body separate from description in the original schema 
-                       BUT our enhance script might have? No, 'activities' has description. 'email_templates' has body.
-                       The `activities` table usually just has a description line. 
-                       WAIT, if the user sends a long body, we only stored "Sent email to..." in description in previous tool call?
-                       Let's check `compose-email-sheet`.
-                       
-                       In `compose-email-sheet`, we inserted:
-                       description: `Sent email to ${...}: ${...}`
-                       
-                       We did NOT insert the body into the activities table.
-                       The `activities` table schema has: `subject`, `description`. No `body`.
-                       
-                       This implies we can't show the full body unless we stored it.
-                       Did we store it in `description`?
-                       "Sent email to recipient: Subject"
-                       
-                       The user might be disappointed if they can't see the body.
-                       However, I can only display what's in the DB.
-                       For now, I will display the description.
-                       
-                       Improvement for future: Add `body` column to activities or store in `notes`?
-                       The schema `001` shows `notes` in clients, not activities.
-                       Activities has `description`.
-                       Maybe `description` should contain the body?
-                       But the code sets it to a summary string.
-                       
-                       I will show `description` for now in the body area.
-                    */}
-              {selectedEmail?.description}
-            </div>
-
-            {selectedEmail?.attachments &&
-              selectedEmail.attachments.length > 0 && (
-                <div className="space-y-2">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Attachments:
+          <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
+            <div className="space-y-6 py-4">
+              {/* Email Metadata */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-muted-foreground uppercase">
+                    Client
                   </span>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedEmail.attachments.map((att: any, i: number) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-2 border rounded px-2 py-1 text-xs bg-background"
-                      >
-                        <Paperclip className="h-3 w-3" />
-                        <span className="truncate max-w-[150px]">
-                          {att.name}
-                        </span>
-                      </div>
-                    ))}
+                  <span className="text-sm font-medium">
+                    {selectedEmail?.client?.name || "Unknown"}
+                  </span>
+                  {selectedEmail?.client?.email && (
+                    <span className="text-xs text-muted-foreground">
+                      {selectedEmail.client.email}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-muted-foreground uppercase">
+                    Sent By
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">
+                      {selectedEmail?.created_by?.full_name || "Unknown"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {selectedEmail?.purpose && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase">
+                    Purpose:
+                  </span>
+                  <Badge variant="secondary" className="capitalize">
+                    {selectedEmail.purpose.replace("_", " ")}
+                  </Badge>
+                </div>
+              )}
+
+              {/* Email Body */}
+              <div className="space-y-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase">
+                  Message
+                </span>
+                <div className="border rounded-md p-4 bg-muted/20 text-sm whitespace-pre-wrap">
+                  {selectedEmail?.body}
+                </div>
+              </div>
+
+              {/* Response Status */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase">
+                  Response Status:
+                </span>
+                <Badge
+                  variant={selectedEmail?.got_response ? "default" : "outline"}
+                >
+                  {selectedEmail?.got_response ? "Received" : "No Response"}
+                </Badge>
+              </div>
+
+              {/* Response Body if exists */}
+              {selectedEmail?.response_body && (
+                <div className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase">
+                    Response
+                  </span>
+                  <div className="border rounded-md p-4 bg-green-50 dark:bg-green-950/20 text-sm whitespace-pre-wrap">
+                    {selectedEmail.response_body}
                   </div>
                 </div>
               )}
-          </div>
+
+              {/* Child Emails (Follow-ups) */}
+              {selectedEmail?.child_emails &&
+                selectedEmail.child_emails.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground uppercase">
+                        Follow-up Emails
+                      </span>
+                      <Badge variant="outline">
+                        {selectedEmail.child_emails.length}
+                      </Badge>
+                    </div>
+                    <div className="space-y-3">
+                      {selectedEmail.child_emails.map((childEmail, index) => (
+                        <Card key={childEmail.id} className="bg-muted/30">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-1">
+                                <CardTitle className="text-sm font-medium">
+                                  {childEmail.subject}
+                                </CardTitle>
+                                <CardDescription className="text-xs">
+                                  Sent on{" "}
+                                  {format(
+                                    new Date(childEmail.sent_at),
+                                    "PPP 'at' p"
+                                  )}
+                                </CardDescription>
+                              </div>
+                              {childEmail.purpose && (
+                                <Badge
+                                  variant="secondary"
+                                  className="text-xs capitalize"
+                                >
+                                  {childEmail.purpose.replace("_", " ")}
+                                </Badge>
+                              )}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="text-sm text-muted-foreground whitespace-pre-wrap border-l-2 pl-3">
+                              {childEmail.body}
+                            </div>
+                            {childEmail.got_response && (
+                              <div className="flex items-center gap-2">
+                                <Badge variant="default" className="text-xs">
+                                  Response Received
+                                </Badge>
+                              </div>
+                            )}
+                            {childEmail.response_body && (
+                              <div className="mt-2 p-3 bg-background rounded-md border text-xs">
+                                <div className="font-medium mb-1">
+                                  Response:
+                                </div>
+                                <div className="text-muted-foreground whitespace-pre-wrap">
+                                  {childEmail.response_body}
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* Additional Metadata */}
+              <div className="pt-4 border-t space-y-2">
+                {selectedEmail?.updated_at &&
+                  selectedEmail.updated_at !== selectedEmail.sent_at && (
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Last Updated:</span>
+                      <span>
+                        {format(
+                          new Date(selectedEmail.updated_at),
+                          "PPP 'at' p"
+                        )}
+                      </span>
+                    </div>
+                  )}
+              </div>
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>

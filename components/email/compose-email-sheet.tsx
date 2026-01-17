@@ -63,8 +63,21 @@ const emailSchema = z.object({
   recipient_email: z.string().email(),
   subject: z.string().min(1, "Subject is required"),
   body: z.string().min(1, "Body is required"),
+  purpose: z
+    .enum([
+      "introduction",
+      "follow_up",
+      "reminder",
+      "check_in",
+      "onboarding",
+      "proposal",
+      "renewal",
+      "support",
+    ])
+    .default("introduction"),
   template_id: z.string().optional(),
   client_id: z.string().optional(),
+  parent_email_id: z.string().optional(),
 });
 
 interface ComposeEmailSheetProps {
@@ -96,8 +109,10 @@ export function ComposeEmailSheet({
       recipient_email: "",
       subject: "",
       body: "",
+      purpose: "introduction",
       template_id: "none",
       client_id: "",
+      parent_email_id: "",
     },
   });
 
@@ -238,20 +253,15 @@ export function ComposeEmailSheet({
           "Email sent, but activity not saved because recipient is not a registered client."
         );
       } else {
-        const { error: insertError } = await supabase
-          .from("activities")
-          .insert({
-            client_id: clientId,
-            user_id: session.session.user.id,
-            type: "email",
-            subject: pendingValues.subject,
-            description: `Sent email to ${pendingValues.recipient_email}: ${pendingValues.subject}`,
-            status: "completed",
-            created_by: session.session.user.id,
-            completed_at: new Date().toISOString(),
-            scheduled_at: new Date().toISOString(),
-            attachments: attachmentData,
-          });
+        const { error: insertError } = await supabase.from("emails").insert({
+          client_id: clientId,
+          subject: pendingValues.subject,
+          body: pendingValues.body,
+          purpose: pendingValues.purpose || "introduction",
+          created_by: session.session.user.id,
+          parent_email_id: pendingValues.parent_email_id || null,
+          sent_at: new Date().toISOString(),
+        });
 
         if (insertError) throw insertError;
         toast.success("Email activity logged successfully");
@@ -309,6 +319,39 @@ export function ComposeEmailSheet({
                               {t.name}
                             </SelectItem>
                           ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="purpose"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Purpose</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select purpose" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="introduction">
+                            Introduction
+                          </SelectItem>
+                          <SelectItem value="follow_up">Follow Up</SelectItem>
+                          <SelectItem value="reminder">Reminder</SelectItem>
+                          <SelectItem value="check_in">Check In</SelectItem>
+                          <SelectItem value="onboarding">Onboarding</SelectItem>
+                          <SelectItem value="proposal">Proposal</SelectItem>
+                          <SelectItem value="renewal">Renewal</SelectItem>
+                          <SelectItem value="support">Support</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

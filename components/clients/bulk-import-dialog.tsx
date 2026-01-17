@@ -82,6 +82,53 @@ export function BulkImportDialog() {
           return;
         }
 
+        // Strict column validation
+        const requiredColumns = [
+          "Name",
+          "Email",
+          "Phone",
+          "Company",
+          "Industry",
+          "Location",
+          "Address",
+          "Website",
+          "Status",
+          "Lifetime Value",
+          "Notes",
+        ];
+
+        const fileColumns = Object.keys(jsonData[0]);
+
+        // Check if all required columns exist
+        const missingColumns = requiredColumns.filter(
+          (col) => !fileColumns.includes(col)
+        );
+
+        if (missingColumns.length > 0) {
+          toast.error(
+            `Invalid file format. Missing columns: ${missingColumns.join(
+              ", "
+            )}. Required columns are: ${requiredColumns.join(", ")}`
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        // Check for extra columns
+        const extraColumns = fileColumns.filter(
+          (col) => !requiredColumns.includes(col)
+        );
+
+        if (extraColumns.length > 0) {
+          toast.error(
+            `Invalid file format. Unexpected columns: ${extraColumns.join(
+              ", "
+            )}. File should only contain: ${requiredColumns.join(", ")}`
+          );
+          setIsLoading(false);
+          return;
+        }
+
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -94,15 +141,21 @@ export function BulkImportDialog() {
         // Map and clean data
         const clientsToInsert = jsonData
           .map((row) => ({
-            name: row.name || row.Name || "Unknown",
-            email: row.email || row.Email || "",
-            phone: row.phone || row.Phone,
-            company: row.company || row.Company,
-            industry: row.industry || row.Industry,
-            created_by: user.id,
-            status: "lead", // Default status
+            name: row.Name || "Unknown",
+            email: row.Email || "",
+            phone: row.Phone || null,
+            company: row.Company || null,
+            industry: row.Industry || null,
+            location: row.Location || null,
+            address: row.Address || null,
+            website: row.Website || null,
+            status: row.Status?.toLowerCase() || "lead",
+            lifetime_value: parseFloat(row["Lifetime Value"]) || 0,
+            notes: row.Notes || null,
+            created_by: user.id, // Set to current user
+            assigned_to: user.id, // Default to creator
           }))
-          .filter((c) => c.email); // specific validation: email is required
+          .filter((c) => c.email); // Email is required
 
         const { error } = await supabase
           .from("clients")
@@ -141,9 +194,12 @@ export function BulkImportDialog() {
         <DialogHeader>
           <DialogTitle>Import Clients</DialogTitle>
           <DialogDescription>
-            Upload a CSV or Excel file. Required columns: name, email.
+            Upload a CSV or Excel file with the following columns (in order):
             <br />
-            Optional: phone, company, industry.
+            <strong>
+              Name, Email, Phone, Company, Industry, Location, Address, Website,
+              Status, Lifetime Value, Notes
+            </strong>
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

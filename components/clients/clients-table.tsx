@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -53,7 +54,12 @@ interface Client {
   industry: string | null;
   status: string;
   lifetime_value: number;
+  location: string | null;
+  phone: string | null;
+  address: string | null;
+  website: string | null;
   assigned_user: { full_name: string } | null;
+  created_by: { full_name: string } | null;
   created_at: string;
 }
 
@@ -63,11 +69,23 @@ interface ClientsTableProps {
 }
 
 const statusColors = {
-  lead: "secondary",
-  active: "default",
-  inactive: "outline",
-  churned: "destructive",
-} as const;
+  lead: {
+    variant: "secondary" as const,
+    className: "bg-blue-100 text-blue-800 hover:bg-blue-100",
+  },
+  active: {
+    variant: "default" as const,
+    className: "bg-green-100 text-green-800 hover:bg-green-100",
+  },
+  inactive: {
+    variant: "outline" as const,
+    className: "bg-gray-100 text-gray-800 hover:bg-gray-100",
+  },
+  churned: {
+    variant: "destructive" as const,
+    className: "bg-red-100 text-red-800 hover:bg-red-100",
+  },
+};
 
 type SortKey = keyof Client | "assigned_user";
 type SortDirection = "asc" | "desc";
@@ -91,6 +109,12 @@ export function ClientsTable({ clients, userRole }: ClientsTableProps) {
     assigned: true,
     ltv: true,
     actions: true,
+    location: true,
+    phone: true,
+    address: true,
+    website: true,
+    created_by: true,
+    created_at: true,
   });
 
   // Filter & Search
@@ -99,7 +123,8 @@ export function ClientsTable({ clients, userRole }: ClientsTableProps) {
       const matchesSearch =
         client.name.toLowerCase().includes(search.toLowerCase()) ||
         client.email.toLowerCase().includes(search.toLowerCase()) ||
-        client.company?.toLowerCase().includes(search.toLowerCase());
+        client.company?.toLowerCase().includes(search.toLowerCase()) ||
+        client.industry?.toLowerCase().includes(search.toLowerCase());
 
       const matchesStatus =
         statusFilter === "all" || client.status === statusFilter;
@@ -177,6 +202,11 @@ export function ClientsTable({ clients, userRole }: ClientsTableProps) {
       "Assigned To": c.assigned_user?.full_name || "Unassigned",
       "Lifetime Value": c.lifetime_value,
       "Created At": new Date(c.created_at).toLocaleDateString(),
+      "Created By": c.created_by?.full_name || "Unassigned",
+      Location: c.location || "",
+      Phone: c.phone || "",
+      Address: c.address || "",
+      Website: c.website || "",
     }));
 
     if (format === "csv") {
@@ -237,6 +267,28 @@ export function ClientsTable({ clients, userRole }: ClientsTableProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.location.reload()}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mr-2"
+            >
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+            </svg>
+            Refresh
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="hidden lg:flex">
@@ -364,8 +416,75 @@ export function ClientsTable({ clients, userRole }: ClientsTableProps) {
                   </div>
                 </TableHead>
               )}
+
+              {columnVisibility.location && (
+                <TableHead
+                  className="cursor-pointer"
+                  onClick={() => handleSort("location")}
+                >
+                  <div className="flex items-center hover:text-foreground">
+                    Location
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </div>
+                </TableHead>
+              )}
+              {columnVisibility.phone && (
+                <TableHead
+                  className="cursor-pointer"
+                  onClick={() => handleSort("phone")}
+                >
+                  <div className="flex items-center hover:text-foreground">
+                    Phone
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </div>
+                </TableHead>
+              )}
+              {columnVisibility.address && (
+                <TableHead
+                  className="cursor-pointer"
+                  onClick={() => handleSort("address")}
+                >
+                  <div className="flex items-center hover:text-foreground">
+                    Address
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </div>
+                </TableHead>
+              )}
+              {columnVisibility.website && (
+                <TableHead
+                  className="cursor-pointer"
+                  onClick={() => handleSort("website")}
+                >
+                  <div className="flex items-center hover:text-foreground">
+                    Website
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </div>
+                </TableHead>
+              )}
+              {columnVisibility.created_by && (
+                <TableHead
+                  className="cursor-pointer"
+                  onClick={() => handleSort("created_by")}
+                >
+                  <div className="flex items-center hover:text-foreground">
+                    Created By
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </div>
+                </TableHead>
+              )}
+              {columnVisibility.created_at && (
+                <TableHead
+                  className="cursor-pointer"
+                  onClick={() => handleSort("created_at")}
+                >
+                  <div className="flex items-center hover:text-foreground">
+                    Last Purchase
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </div>
+                </TableHead>
+              )}
               {columnVisibility.actions && (
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[100px] text-center">Action</TableHead>
               )}
             </TableRow>
           </TableHeader>
@@ -415,7 +534,12 @@ export function ClientsTable({ clients, userRole }: ClientsTableProps) {
                         variant={
                           statusColors[
                             client.status as keyof typeof statusColors
-                          ]
+                          ].variant
+                        }
+                        className={
+                          statusColors[
+                            client.status as keyof typeof statusColors
+                          ].className
                         }
                       >
                         {client.status}
@@ -424,7 +548,25 @@ export function ClientsTable({ clients, userRole }: ClientsTableProps) {
                   )}
                   {columnVisibility.assigned && (
                     <TableCell className="hidden lg:table-cell">
-                      {client.assigned_user?.full_name || "Unassigned"}
+                      {client.assigned_user ? (
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                              {client.assigned_user.full_name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .toUpperCase()
+                                .slice(0, 2)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{client.assigned_user.full_name}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">
+                          Unassigned
+                        </span>
+                      )}
                     </TableCell>
                   )}
                   {columnVisibility.ltv && (
@@ -432,48 +574,61 @@ export function ClientsTable({ clients, userRole }: ClientsTableProps) {
                       ${Number(client.lifetime_value).toLocaleString()}
                     </TableCell>
                   )}
+                  {columnVisibility.location && (
+                    <TableCell>{client.location || "-"}</TableCell>
+                  )}
+                  {columnVisibility.phone && (
+                    <TableCell>{client.phone || "-"}</TableCell>
+                  )}
+                  {columnVisibility.address && (
+                    <TableCell>{client.address || "-"}</TableCell>
+                  )}
+                  {columnVisibility.website && (
+                    <TableCell>{client.website || "-"}</TableCell>
+                  )}
+                  {columnVisibility.created_by && (
+                    <TableCell>{client.created_by?.full_name || "-"}</TableCell>
+                  )}
+                  {columnVisibility.created_at && (
+                    <TableCell>
+                      {new Date(client.created_at).toLocaleDateString()}
+                    </TableCell>
+                  )}
                   {columnVisibility.actions && (
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem asChild>
-                            <Link
-                              href={`/clients/${client.id}`}
-                              className="cursor-pointer"
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          asChild
+                        >
+                          <Link href={`/clients/${client.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        {canEdit && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            asChild
+                          >
+                            <Link href={`/clients/${client.id}/edit`}>
+                              <Pencil className="h-4 w-4" />
                             </Link>
-                          </DropdownMenuItem>
-                          {canEdit && (
-                            <DropdownMenuItem asChild>
-                              <Link
-                                href={`/clients/${client.id}/edit`}
-                                className="cursor-pointer"
-                              >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit Client
-                              </Link>
-                            </DropdownMenuItem>
-                          )}
-                          {canDelete && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive cursor-pointer">
-                                <Trash className="mr-2 h-4 w-4" />
-                                Delete Client
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>
